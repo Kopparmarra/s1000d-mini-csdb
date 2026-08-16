@@ -18,4 +18,37 @@
 </style>
 
 </head><body>
-<div id="app"></div><script src="data.js"></script><script src="app.js"></script></body></html>
+<div id="app"></div><script src="data.js"></script><script src="app.js"></script>
+<aside id="coursePanel" class="course-panel" aria-hidden="true">
+  <div class="course-panel-head">
+    <div>
+      <div class="course-kicker">GUIDED COURSE</div>
+      <div id="courseProgressText" class="course-progress-text">Lesson 1 of 8</div>
+    </div>
+    <button id="courseClose" class="icon-btn" type="button" aria-label="Close course">×</button>
+  </div>
+  <div class="course-progress-dots" id="courseDots" aria-label="Course progress"></div>
+  <div id="courseBody" class="course-body"></div>
+  <div class="course-footer">
+    <button id="coursePrev" class="course-nav-btn secondary" type="button">‹ Previous</button>
+    <button id="courseNext" class="course-nav-btn" type="button">Next ›</button>
+  </div>
+</aside>
+
+<div id="courseScrim" class="course-scrim" hidden></div>
+
+<aside id="aboutPanel" class="about-panel" aria-hidden="true">
+  <div class="course-panel-head">
+    <div>
+      <div class="course-kicker">ABOUT THIS DEMO</div>
+      <div class="course-progress-text">S1000D Mini-CSDB</div>
+    </div>
+    <button id="aboutClose" class="icon-btn" type="button" aria-label="Close about">×</button>
+  </div>
+  <div class="course-body">
+    <p>This is an educational CSDB emulator built around the S1000D Bike sample dataset. It demonstrates concepts such as Data Modules, DMC metadata, references, ICNs, Publication Modules, authoring workflow, review, approval, issue history and BREX-informed checks.</p>
+    <p>It is not a production CSDB and does not claim full S1000D conformance. Workflow changes are stored locally in your browser and do not affect other visitors or the source dataset.</p>
+  </div>
+</aside>
+
+</body></html>

@@ -26,3 +26,238 @@
 
 /* v1.2 structured Author view */
 .authoring-menubar .active-mode{font-weight:700;color:#1d6696;border-bottom:2px solid #1d6696;height:34px;display:flex;align-items:center}.authoring-field-label{font-size:12px;font-weight:650;color:#3f4c56;margin:0 0 6px}.authoring-field-label span{font-weight:400;color:#7a8791;margin-left:8px}.authoring-canvas{min-height:420px;border:1px solid #c8d0d7;border-radius:6px;background:#fff;padding:20px 22px;color:#20272d;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;outline:none;box-shadow:inset 0 1px 2px rgba(20,32,42,.03)}.authoring-canvas:focus{border-color:#6fa2c2;box-shadow:0 0 0 2px rgba(45,121,169,.10)}.authoring-canvas .structured-content{font-size:14px}.authoring-canvas .semantic-section h3{font-size:17px;font-weight:650;margin-top:18px}.authoring-canvas .semantic-section h4{font-size:15px;font-weight:650;margin-top:15px}.authoring-canvas .semantic-section h5{font-size:14px;font-weight:600}.authoring-canvas .semantic-section p,.authoring-canvas .proc-copy p{font-size:14px;font-weight:400;line-height:1.6}.authoring-canvas .proc-title{font-weight:600!important}.proc-step.has-children:not(.has-title)>.proc-line .proc-copy>p:first-child{font-weight:600}.authoring-canvas .internal-ref{font-weight:600}.authoring-canvas .semantic-alert>b,.authoring-canvas .proc-req summary,.authoring-canvas .semantic-table th,.authoring-canvas .field-list dt{font-weight:650}.authoring-canvas .semantic-list li,.authoring-canvas .proc-list li{font-weight:400}.authoring-canvas .source-note{display:none}.authoring-main .change-note{margin-top:16px}.draft-structured .source-note{display:none}
+
+
+/* v2.0 Guided Course ------------------------------------------------------- */
+.learning-toolbar{display:flex;gap:8px;align-items:center}
+.top-tool-btn{
+  appearance:none;
+  border:1px solid var(--line,#d9dee8);
+  background:rgba(255,255,255,.92);
+  color:var(--text,#202938);
+  font:600 12px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  padding:7px 10px;
+  border-radius:7px;
+  cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+.top-tool-btn:hover{background:#fff;border-color:#b8c1cc}
+.top-tool-btn.subtle{font-weight:500;color:var(--muted,#667085)}
+
+.course-panel,.about-panel{
+  position:fixed;
+  top:0;
+  right:0;
+  width:min(360px,92vw);
+  height:100vh;
+  z-index:1500;
+  background:var(--panel,#fff);
+  color:var(--text,#202938);
+  border-left:1px solid var(--line,#d9dee8);
+  box-shadow:-16px 0 40px rgba(18,28,45,.14);
+  transform:translateX(105%);
+  transition:transform .2s ease;
+  display:flex;
+  flex-direction:column;
+}
+.course-panel.open,.about-panel.open{transform:translateX(0)}
+.course-panel-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  padding:18px 18px 12px;
+  border-bottom:1px solid var(--line,#e1e6ed);
+}
+.course-kicker{
+  font:700 11px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:.12em;
+  color:var(--muted,#667085);
+}
+.course-progress-text{
+  margin-top:4px;
+  font:600 14px/1.35 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.icon-btn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  font-size:24px;
+  line-height:1;
+  color:var(--muted,#667085);
+  cursor:pointer;
+  padding:0 2px;
+}
+.course-progress-dots{
+  display:flex;
+  gap:6px;
+  padding:12px 18px 0;
+}
+.course-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#d7dde5;
+}
+.course-dot.done{background:#4f6f8f}
+.course-dot.current{background:#27384c;box-shadow:0 0 0 3px rgba(39,56,76,.11)}
+.course-body{
+  padding:18px;
+  overflow:auto;
+  flex:1;
+  font:14px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.course-body h3{
+  margin:0 0 8px;
+  font-size:18px;
+  line-height:1.25;
+}
+.course-body .lesson-goal{
+  color:var(--muted,#667085);
+  margin-bottom:16px;
+}
+.course-body ol,.course-body ul{padding-left:20px;margin:10px 0 16px}
+.course-body li{margin:6px 0}
+.course-task{
+  border:1px solid var(--line,#d9dee8);
+  border-radius:8px;
+  padding:12px 13px;
+  margin:14px 0;
+  background:rgba(248,250,252,.7);
+}
+.course-check{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  margin-top:12px;
+  font-size:13px;
+}
+.course-check input{margin-top:3px}
+.course-hint-btn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#315f86;
+  font-weight:600;
+  cursor:pointer;
+  padding:0;
+  margin-top:4px;
+}
+.course-hint{
+  margin-top:9px;
+  padding:9px 10px;
+  border-left:3px solid #8ea8be;
+  background:#f2f6f9;
+  font-size:13px;
+}
+.course-footer{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:13px 18px 18px;
+  border-top:1px solid var(--line,#e1e6ed);
+}
+.course-nav-btn{
+  appearance:none;
+  border:1px solid #27384c;
+  background:#27384c;
+  color:#fff;
+  border-radius:7px;
+  padding:8px 12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.course-nav-btn.secondary{
+  color:#27384c;
+  background:#fff;
+  border-color:#cbd3dc;
+}
+.course-nav-btn:disabled{opacity:.4;cursor:default}
+.course-scrim{
+  position:fixed;
+  inset:0;
+  z-index:1400;
+  background:rgba(20,28,38,.08);
+}
+.course-highlight{
+  position:relative !important;
+  z-index:1450 !important;
+  outline:3px solid rgba(73,111,145,.32) !important;
+  outline-offset:3px !important;
+  border-radius:6px;
+  animation:coursePulse 1.5s ease-in-out 2;
+}
+@keyframes coursePulse{
+  0%,100%{outline-color:rgba(73,111,145,.25)}
+  50%{outline-color:rgba(73,111,145,.65)}
+}
+.lesson-complete{
+  border:1px solid #cfd9d1;
+  background:#f5f8f5;
+  border-radius:9px;
+  padding:14px;
+  margin-top:16px;
+}
+@media(max-width:760px){
+  .learning-toolbar{top:8px;right:8px}
+  .top-tool-btn{padding:6px 8px;font-size:11px}
+}
+
+/* v2.1 topbar placement fix */
+.top-tool-btn{
+  position:static !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 4px 0 0;
+  white-space:nowrap;
+}
+header .top-tool-btn,
+.topbar .top-tool-btn,
+.app-header .top-tool-btn{
+  background:rgba(255,255,255,.08);
+  color:#eef4f8;
+  border-color:rgba(255,255,255,.28);
+  box-shadow:none;
+}
+header .top-tool-btn:hover,
+.topbar .top-tool-btn:hover,
+.app-header .top-tool-btn:hover{
+  background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.4);
+}
+
+
+/* v2.3 responsive detail tabs */
+.detail-tabs,
+.tabs,
+.tabbar,
+[role="tablist"] {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.detail-tabs,
+.tabs {
+  display: grid !important;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  width: 100%;
+}
+
+.detail-tabs button,
+.tabs button,
+[role="tablist"] > button {
+  min-width: 0 !important;
+  width: 100%;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.05;
+  font-size: 11px;
+}
+
+@media (max-width: 1050px) {
+  .detail-tabs,
+  .tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

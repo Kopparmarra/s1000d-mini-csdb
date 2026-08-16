@@ -40,7 +40,7 @@ function ensureSelectedVisible(){
 }
 
 function apply(){ensureSelectedVisible();if(state.library==='icn'){const q=state.query.trim().toLowerCase();state.filtered=icnLibrary().filter(i=>!q||(i.ref+' '+(i.file||'')+' '+i.usedBy.map(x=>x.title).join(' ')).toLowerCase().includes(q));renderTable();renderCount();return}let a=state.items;if(state.system!=='All')a=a.filter(x=>sysOf(x)===state.system);if(state.kind!=='All')a=a.filter(x=>x.kind===state.kind);const q=state.query.trim().toLowerCase();if(q)a=a.filter(x=>(x.code+' '+(wf(x).draftTitle||x.title)+' '+x.filename+' '+x.schema).toLowerCase().includes(q));state.filtered=a;renderTable();renderCount()}
-function render(){document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v1.7</span><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
+function render(){document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v2.3</span><button id="courseBtn" class="top-tool-btn" type="button">Guided Course</button><button id="aboutBtn" class="top-tool-btn subtle" type="button">About</button><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
  document.querySelector('#search').oninput=e=>{state.query=e.target.value;apply()};document.querySelector('#kind').onchange=e=>{state.kind=e.target.value;apply()};document.querySelector('#role').value=state.role;document.querySelector('#role').onchange=e=>{state.role=e.target.value;renderDetail()};document.querySelector('#reset').onclick=()=>{state.query='';state.kind='All';state.system='All';state.library='objects';state.selected=pickDefaultDM();state.selectedIcn=null;document.querySelector('#search').value='';document.querySelector('#kind').value='All';renderTree();apply();renderDetail()};document.querySelector('#loadBtn').onclick=()=>document.querySelector('#folder').click();document.querySelector('#folder').onchange=importFiles;document.querySelector('#clearWf').onclick=()=>{if(confirm('Reset all simulated workflow states and audit history?')){localStorage.removeItem(WF_KEY);Object.keys(workflow).forEach(k=>delete workflow[k]);apply();renderDetail()}};renderTree();apply();renderDetail();}
 function renderTree(){const systems=[...new Set(state.items.map(sysOf))].sort();const counts=s=>state.items.filter(x=>sysOf(x)===s).length;const icns=icnLibrary();document.querySelector('#tree').innerHTML=`<button class="${state.library==='objects'&&state.system==='All'?'active':''}" data-s="All">All objects <span class="n">${state.items.length}</span></button>`+systems.map(s=>`<button class="${state.library==='objects'&&state.system===s?'active':''}" data-s="${esc(s)}">${esc(s)} <span class="n">${counts(s)}</span></button>`).join('')+`<div class="tree-sep"></div><button class="${state.library==='icn'?'active':''}" data-s="__ICN__">ICN Library <span class="n">${icns.length}</span></button>`;document.querySelectorAll('#tree button').forEach(b=>b.onclick=()=>{if(b.dataset.s==='__ICN__'){state.library='icn';state.selected=null;state.selectedIcn=icns[0]||null}else{state.library='objects';state.system=b.dataset.s;state.selectedIcn=null}renderTree();apply();renderDetail()})}
 function renderTable(){const tb=document.querySelector('#rows'),th=document.querySelector('#thead'),main=document.querySelector('#main'),tableWrap=document.querySelector('.table-wrap');main?.classList.remove('dashboard-mode');if(!document.querySelector('#rows')){tableWrap.innerHTML='<table><thead id="thead"></thead><tbody id="rows"></tbody></table>'}const tb2=document.querySelector('#rows'),th2=document.querySelector('#thead');if(state.library==='icn'){th2.innerHTML='<tr><th>Preview</th><th>ICN</th><th>Format</th><th>Referenced by</th></tr>';tb2.innerHTML=state.filtered.map((i,n)=>`<tr data-icn="${n}" class="${state.selectedIcn&&state.selectedIcn.ref===i.ref?'sel':''}"><td class="icn-thumb">${i.file?`<img src="assets/${encodeURI(i.file)}" alt="">`:'<span>—</span>'}</td><td class="code">${esc(i.ref)}</td><td>${esc(i.file?(i.file.split('.').pop()||'').toUpperCase():'Referenced')}</td><td>${i.usedBy.length}</td></tr>`).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>{state.selectedIcn=state.filtered[+r.dataset.icn];renderTable();renderDetail()});return}th2.innerHTML='<tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr>';tb2.innerHTML=state.filtered.map(x=>{const w=wf(x),title=w.draftTitle||x.title;return `<tr data-i="${state.items.indexOf(x)}" class="${state.selected===x?'sel':''}"><td><span class="pill">${esc(typeLabel(x))}</span></td><td class="code">${esc(x.code)}${w.checkedOut?'<span class="lock">● checked out</span>':''}</td><td>${esc(title||'—')}</td><td>${esc(x.issueNumber||'—')}</td><td><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></td></tr>`}).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>selectItem(state.items[+r.dataset.i]))}
@@ -458,3 +458,232 @@ render();
 
 /* v1.5 default landing */
 if(!state.selected) state.selected=pickDefaultDM();
+
+
+/* v2.0 Guided Course ------------------------------------------------------- */
+const COURSE_KEY='s1000dMiniCsdbCourseV1';
+
+const courseLessons=[
+  {
+    title:'Explore the CSDB',
+    goal:'Understand what a CSDB stores and how managed information objects are organised.',
+    steps:[
+      'Look at the navigation tree on the left.',
+      'Open All objects and scan the object list.',
+      'Notice that Data Modules, Publication Modules and other managed objects coexist in the same environment.'
+    ],
+    task:'Find the currently selected Data Module and identify its title in the object list.',
+    check:'I found the selected Data Module in the object list.',
+    hint:'The highlighted row in the centre list is the object currently shown in the detail pane.',
+    target:()=>document.querySelector('#rows tr.selected, #rows tr.active, #rows tr[aria-selected="true"]') || document.querySelector('#rows tr')
+  },
+  {
+    title:'Understand a Data Module',
+    goal:'Read the key metadata that identifies and controls a Data Module.',
+    steps:[
+      'Keep the selected Data Module open.',
+      'Find its DMC, issue, language and security metadata.',
+      'Switch between Content and XML to see that the rendered information comes from structured source data.'
+    ],
+    task:'Identify the DMC and issue number for the selected module.',
+    check:'I identified the DMC and issue number.',
+    hint:'Look in the metadata area above the Content tab, then compare it with the XML source.',
+    target:()=>document.querySelector('.detail, #detail, #detailPane')
+  },
+  {
+    title:'Structured content',
+    goal:'See how S1000D XML structure becomes readable technical content.',
+    steps:[
+      'Open a procedural Data Module.',
+      'Read the Content view.',
+      'Switch to XML and locate a proceduralStep element.',
+      'Compare parent steps, substeps and lists with the rendered view.'
+    ],
+    task:'Find one proceduralStep in XML and the matching instruction in Content.',
+    check:'I matched an XML proceduralStep to rendered content.',
+    hint:'Use a module such as Brake system — Manual test or Handlebar — Remove procedures.',
+    target:()=>[...document.querySelectorAll('button')].find(b=>/xml/i.test(b.textContent||''))
+  },
+  {
+    title:'References and reuse',
+    goal:'Understand how modular information is linked and reused instead of duplicated.',
+    steps:[
+      'Open the References tab for a Data Module.',
+      'Follow a dmRef to another module.',
+      'Open Where used to see which objects reference the selected module.'
+    ],
+    task:'Follow one reference, then use Where used to navigate back through the information network.',
+    check:'I followed a reference and checked Where used.',
+    hint:'References show outgoing links; Where used shows incoming links.',
+    target:()=>[...document.querySelectorAll('button')].find(b=>/where used|references/i.test(b.textContent||''))
+  },
+  {
+    title:'ICN and illustrations',
+    goal:'Explore how illustrations are managed as separate information objects.',
+    steps:[
+      'Open ICN Library in the left navigation.',
+      'Select an illustration.',
+      'Inspect its preview or file information.',
+      'Use Where used to see which Data Modules reference it.'
+    ],
+    task:'Find one ICN and identify at least one Data Module that uses it.',
+    check:'I found an ICN and its Where used relationship.',
+    hint:'ICN stands for Information Control Number.',
+    target:()=>[...document.querySelectorAll('button')].find(b=>/ICN Library/i.test(b.textContent||''))
+  },
+  {
+    title:'Publication Modules',
+    goal:'See how a publication is assembled from reusable Data Modules.',
+    steps:[
+      'Return to the object library.',
+      'Filter or select a Publication Module.',
+      'Open its structure and inspect the referenced Data Modules.'
+    ],
+    task:'Find a Publication Module and identify one Data Module included in it.',
+    check:'I found a Data Module inside a Publication Module.',
+    hint:'A Publication Module organises reusable information objects into a deliverable structure.',
+    target:()=>[...document.querySelectorAll('button')].find(b=>/publication/i.test(b.textContent||''))
+  },
+  {
+    title:'Authoring workflow',
+    goal:'Experience the separation between CSDB management and structured authoring.',
+    steps:[
+      'Set your role to Author.',
+      'Select an Issued Data Module and Check out.',
+      'Open it in the Authoring Editor.',
+      'Make a small change, save the working copy and return to the CSDB.',
+      'Submit it for review.'
+    ],
+    task:'Move one Data Module from Issued to In Review.',
+    check:'I submitted a Data Module for review.',
+    hint:'The CSDB manages the object and workflow; the Authoring Editor is where content is edited.',
+    target:()=>document.querySelector('#role') || [...document.querySelectorAll('select')].find(s=>/Author/.test(s.textContent||''))
+  },
+  {
+    title:'Review, approval and BREX',
+    goal:'Complete the controlled workflow and explore rule-based quality checks.',
+    steps:[
+      'Switch role to Reviewer and send the module for approval.',
+      'Switch role to Approver and approve & issue it.',
+      'Inspect Issue history and Audit trail.',
+      'Open BREX checks on a Data Module and review the supported validation demo.'
+    ],
+    task:'Complete a full Author > Reviewer > Approver workflow and inspect the resulting history.',
+    check:'I completed the workflow and reviewed BREX checks.',
+    hint:'If a role has no available action, check the current status of the Data Module.',
+    target:()=>document.querySelector('#role') || [...document.querySelectorAll('select')].find(s=>/Reviewer|Approver/.test(s.textContent||''))
+  }
+];
+
+let courseState={lesson:0,done:Array(courseLessons.length).fill(false),open:false};
+
+function loadCourseState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(COURSE_KEY)||'null');
+    if(saved && Array.isArray(saved.done)){
+      courseState.lesson=Math.min(Math.max(saved.lesson||0,0),courseLessons.length-1);
+      courseState.done=courseLessons.map((_,i)=>!!saved.done[i]);
+    }
+  }catch(e){}
+}
+function saveCourseState(){
+  localStorage.setItem(COURSE_KEY,JSON.stringify({lesson:courseState.lesson,done:courseState.done}));
+}
+function clearCourseHighlight(){
+  document.querySelectorAll('.course-highlight').forEach(el=>el.classList.remove('course-highlight'));
+}
+function highlightCourseTarget(){
+  clearCourseHighlight();
+  const lesson=courseLessons[courseState.lesson];
+  const el=lesson?.target?.();
+  if(el){
+    el.classList.add('course-highlight');
+    try{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'})}catch(e){}
+    setTimeout(()=>el.classList.remove('course-highlight'),3200);
+  }
+}
+function renderCourse(){
+  const lesson=courseLessons[courseState.lesson];
+  const body=document.querySelector('#courseBody');
+  const dots=document.querySelector('#courseDots');
+  const progress=document.querySelector('#courseProgressText');
+  const prev=document.querySelector('#coursePrev');
+  const next=document.querySelector('#courseNext');
+  if(!body) return;
+  progress.textContent=`Lesson ${courseState.lesson+1} of ${courseLessons.length}`;
+  dots.innerHTML=courseLessons.map((_,i)=>`<span class="course-dot ${courseState.done[i]?'done':''} ${i===courseState.lesson?'current':''}"></span>`).join('');
+  body.innerHTML=`
+    <h3>${lesson.title}</h3>
+    <p class="lesson-goal">${lesson.goal}</p>
+    <ol>${lesson.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <div class="course-task"><strong>Task</strong><br>${lesson.task}</div>
+    <button class="course-hint-btn" id="courseHintBtn" type="button">Show hint</button>
+    <div id="courseHint" class="course-hint" hidden>${lesson.hint}</div>
+    <label class="course-check">
+      <input id="courseCheck" type="checkbox" ${courseState.done[courseState.lesson]?'checked':''}>
+      <span>${lesson.check}</span>
+    </label>
+    ${courseState.lesson===courseLessons.length-1 && courseState.done.every(Boolean)
+      ? `<div class="lesson-complete"><strong>Course complete.</strong><br>You have explored Data Modules, DMC metadata, structured content, references, ICNs, Publication Modules, authoring workflow, review, approval and BREX-informed checks.<br><br><button id="continueExplore" class="course-nav-btn" type="button">Continue exploring freely ></button></div>`
+      : ''
+    }
+  `;
+  prev.disabled=courseState.lesson===0;
+  next.textContent=courseState.lesson===courseLessons.length-1?'Finish':'Next ›';
+  document.querySelector('#courseHintBtn')?.addEventListener('click',()=>{
+    const hint=document.querySelector('#courseHint');
+    hint.hidden=!hint.hidden;
+    highlightCourseTarget();
+  });
+  document.querySelector('#courseCheck')?.addEventListener('change',e=>{
+    courseState.done[courseState.lesson]=e.target.checked;
+    saveCourseState();
+    renderCourse();
+  });
+  document.querySelector('#continueExplore')?.addEventListener('click',closeCourse);
+}
+function openCourse(){
+  courseState.open=true;
+  document.querySelector('#coursePanel')?.classList.add('open');
+  document.querySelector('#coursePanel')?.setAttribute('aria-hidden','false');
+  const scrim=document.querySelector('#courseScrim'); if(scrim) scrim.hidden=false;
+  renderCourse();
+}
+function closeCourse(){
+  courseState.open=false;
+  document.querySelector('#coursePanel')?.classList.remove('open');
+  document.querySelector('#coursePanel')?.setAttribute('aria-hidden','true');
+  const scrim=document.querySelector('#courseScrim'); if(scrim) scrim.hidden=true;
+  clearCourseHighlight();
+}
+function openAbout(){
+  document.querySelector('#aboutPanel')?.classList.add('open');
+  document.querySelector('#aboutPanel')?.setAttribute('aria-hidden','false');
+}
+function closeAbout(){
+  document.querySelector('#aboutPanel')?.classList.remove('open');
+  document.querySelector('#aboutPanel')?.setAttribute('aria-hidden','true');
+}
+function initGuidedCourse(){
+  loadCourseState();
+  document.querySelector('#courseBtn')?.addEventListener('click',openCourse);
+  document.querySelector('#courseClose')?.addEventListener('click',closeCourse);
+  document.querySelector('#courseScrim')?.addEventListener('click',closeCourse);
+  document.querySelector('#aboutBtn')?.addEventListener('click',openAbout);
+  document.querySelector('#aboutClose')?.addEventListener('click',closeAbout);
+  document.querySelector('#coursePrev')?.addEventListener('click',()=>{
+    if(courseState.lesson>0){courseState.lesson--;saveCourseState();renderCourse();}
+  });
+  document.querySelector('#courseNext')?.addEventListener('click',()=>{
+    if(courseState.lesson<courseLessons.length-1){
+      courseState.lesson++;saveCourseState();renderCourse();
+    } else {
+      courseState.done[courseState.lesson]=true;saveCourseState();renderCourse();
+    }
+  });
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',initGuidedCourse);
+}else{
+  initGuidedCourse();
+}
