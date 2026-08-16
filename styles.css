@@ -225,7 +225,7 @@ header .top-tool-btn:hover,
 }
 
 
-/* v2.24 responsive detail tabs */
+/* v2.31 responsive detail tabs */
 .detail-tabs,
 .tabs,
 .tabbar,
@@ -262,7 +262,7 @@ header .top-tool-btn:hover,
   }
 }
 
-/* v2.24: keep all nine detail tabs on one row at normal desktop widths */
+/* v2.31: keep all nine detail tabs on one row at normal desktop widths */
 @media (min-width: 761px) {
   .detail-tabs button,
   .tabs button,
@@ -274,7 +274,7 @@ header .top-tool-btn:hover,
 }
 
 
-/* v2.24 Publication Module lab */
+/* v2.31 Publication Module lab */
 .pm-structure-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0 14px}
 .pm-structure-head>div:first-child{display:flex;flex-direction:column;gap:3px}
 .pm-structure-head>div:first-child span{font-size:12px;color:var(--muted,#667085)}
@@ -309,13 +309,13 @@ header .top-tool-btn:hover,
 .pm-builder-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 20px;border-top:1px solid var(--line,#d9dee8)}.pm-builder-footer>div{display:flex;gap:8px}
 @media(max-width:800px){.pm-builder-layout,.pm-preview-layout{grid-template-columns:1fr}.pm-builder-library{border-right:0;border-bottom:1px solid var(--line,#d9dee8);max-height:38vh}.pm-preview-toc{display:none}.pm-builder-meta{grid-template-columns:1fr}}
 
-/* v2.24 publication preview polish */
+/* v2.31 publication preview polish */
 .pm-preview-module > .structured-content:first-child,
 .pm-preview-module > p:first-child { margin-top: 0; }
 .pm-preview-section { text-transform: none; }
 
 
-/* v2.24 internal reference interaction */
+/* v2.31 internal reference interaction */
 .internal-ref{
   cursor:pointer !important;
   color:#0f6d9b;
@@ -388,8 +388,8 @@ header .top-tool-btn:hover,
 .internal-ref-popover p{
   margin:10px 0 0;
 }
-\n/* v2.24 illustration reference cards */\n.internal-ref-figure{margin:10px 0 2px;border:1px solid #dde4eb;border-radius:7px;background:#f8fafb;padding:8px;text-align:center}\n.internal-ref-figure img{display:block;max-width:100%;max-height:240px;margin:auto;object-fit:contain}\n.internal-ref-cgm{margin:10px 0 8px;padding:10px;border:1px solid #dbe2e9;border-radius:7px;background:#f7f9fb;display:flex;flex-direction:column;gap:3px}\n.internal-ref-cgm b{font-size:12px}.internal-ref-cgm span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#315f86;overflow-wrap:anywhere}.internal-ref-cgm small{color:#687587;line-height:1.35}\n.internal-ref-open-icn{margin-top:8px;border:1px solid #9db1c4;background:#fff;color:#244f70;border-radius:6px;padding:6px 9px;font-weight:600;font-size:12px;cursor:pointer}.internal-ref-open-icn:hover{background:#f1f6f9}\n
-/* v2.24 ICN Where-used focus mode */
+\n/* v2.31 illustration reference cards */\n.internal-ref-figure{margin:10px 0 2px;border:1px solid #dde4eb;border-radius:7px;background:#f8fafb;padding:8px;text-align:center}\n.internal-ref-figure img{display:block;max-width:100%;max-height:240px;margin:auto;object-fit:contain}\n.internal-ref-cgm{margin:10px 0 8px;padding:10px;border:1px solid #dbe2e9;border-radius:7px;background:#f7f9fb;display:flex;flex-direction:column;gap:3px}\n.internal-ref-cgm b{font-size:12px}.internal-ref-cgm span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#315f86;overflow-wrap:anywhere}.internal-ref-cgm small{color:#687587;line-height:1.35}\n.internal-ref-open-icn{margin-top:8px;border:1px solid #9db1c4;background:#fff;color:#244f70;border-radius:6px;padding:6px 9px;font-weight:600;font-size:12px;cursor:pointer}.internal-ref-open-icn:hover{background:#f1f6f9}\n
+/* v2.31 ICN Where-used focus mode */
 .where-used-header{
   display:flex;
   align-items:center;
@@ -411,12 +411,12 @@ header .top-tool-btn:hover,
   font-size:11px;
 }
 
-/* v2.24 focused ICN Where-used navigation */
+/* v2.31 focused ICN Where-used navigation */
 .where-used-header + table tbody tr.sel{
   background:#dbeaf5;
 }
 
-/* v2.24 Media -> ICN Library navigation */
+/* v2.31 Media -> ICN Library navigation */
 .icn-jump-link{
   appearance:none;
   border:0;
@@ -433,7 +433,7 @@ header .top-tool-btn:hover,
   color:#08476a;
 }
 
-/* v2.24 About attribution */
+/* v2.31 About attribution */
 .about-attribution{
   margin-top:18px;
   padding-top:14px;
@@ -448,4 +448,75 @@ header .top-tool-btn:hover,
 .about-attribution span{
   font-size:12px;
   color:var(--muted,#667085);
+}
+
+/* v2.31 procedural structural editing */
+.author-structure-toolbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:0 0 8px;
+  padding:7px 9px;
+  border:1px solid #d8e0e8;
+  border-radius:6px;
+  background:#f7f9fb;
+}
+.author-structure-toolbar button{
+  flex:none;
+}
+.author-structure-toolbar span{
+  font-size:11px;
+  color:#6b7787;
+}
+.authoring-canvas .proc-step[data-simulated-added="1"]{
+  animation:authorStepAdded .6s ease;
+}
+@keyframes authorStepAdded{
+  from{background:rgba(61,125,169,.12)}
+  to{background:transparent}
+}
+
+/* v2.31 visible procedural Add-step control */
+.authoring-canvas > .author-structure-toolbar{
+  display:flex !important;
+  align-items:center;
+  gap:9px;
+  width:max-content;
+  max-width:100%;
+  margin:0 0 18px 0 !important;
+  padding:6px 8px;
+  border:1px solid #cfd9e3;
+  border-radius:6px;
+  background:#f5f8fa;
+}
+.authoring-canvas > .author-structure-toolbar button{
+  appearance:none;
+  border:1px solid #aebdca;
+  background:#fff;
+  color:#243446;
+  padding:6px 10px;
+  border-radius:5px;
+  font:600 12px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  cursor:pointer;
+}
+.authoring-canvas > .author-structure-toolbar button:hover{
+  background:#eef4f8;
+}
+.authoring-canvas > .author-structure-toolbar span{
+  font-size:11px;
+  color:#687686;
+}
+
+/* v2.31 workflow guidance spacing */
+.workflowbar{
+  align-items:flex-start;
+}
+.workflowbar .actions{
+  max-width:52%;
+  line-height:1.35;
+}
+.workflowbar .actions .muted{
+  display:block;
+  padding:2px 0;
+  white-space:normal;
 }

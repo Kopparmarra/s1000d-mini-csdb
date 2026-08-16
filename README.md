@@ -92,24 +92,48 @@ v2.17 patches the actual Media-card renderer so the visible ICN code is a real n
 
 
 ## ICN Library view reset
-v2.24 rebuilds the ICN Library table whenever it is entered, preventing stale Where-used headers from remaining after Media-to-ICN navigation.
+v2.31 rebuilds the ICN Library table whenever it is entered, preventing stale Where-used headers from remaining after Media-to-ICN navigation.
 
 
 ## ICN state cleanup
-v2.24 removes the obsolete v2.12 ICN Where-used branch from apply(), leaving a single source of truth for ICN Library rendering.
+v2.31 removes the obsolete v2.12 ICN Where-used branch from apply(), leaving a single source of truth for ICN Library rendering.
 
 
 ## ICN detail sync
-v2.24 ensures ICN detail rendering takes precedence whenever the app is in ICN Library mode, preventing a previously selected DM detail pane from remaining visible.
+v2.31 ensures ICN detail rendering takes precedence whenever the app is in ICN Library mode, preventing a previously selected DM detail pane from remaining visible.
 
 
 ## Root-cause navigation fix
-v2.24 restores the missing renderCount() function. Its absence caused a ReferenceError after centre-pane rendering, preventing detail-pane updates during startup and ICN navigation.
+v2.31 restores the missing renderCount() function. Its absence caused a ReferenceError after centre-pane rendering, preventing detail-pane updates during startup and ICN navigation.
 
 
 ## Default object tabs
-v2.24 opens every selected Data Module on Content and every Publication Module on Structure, preventing a tab selected on one object from carrying over to another.
+v2.31 opens every selected Data Module on Content and every Publication Module on Structure, preventing a tab selected on one object from carrying over to another.
 
 
 ## About panel
-v2.24 reframes the About copy in first person and adds creator attribution to Lars Nilsson.
+v2.31 reframes the About copy in first person and adds creator attribution to Lars Nilsson.
+
+
+## Authoring structural edit
+v2.31 adds + Add step for procedural Data Modules. New top-level procedural steps are automatically numbered and stored in the local working copy.
+
+
+## Visible structural editing control
+v2.31 places + Add step directly inside the visible Structured content editor for procedural Data Modules.
+
+
+## Procedural authoring detection fix
+v2.31 correctly recognises the Bike dataset's `proced` schema identifier as Procedural, enabling the structural + Add step control.
+
+
+## Workflow message fix
+v2.31 fixes a malformed template literal so role/status guidance is rendered as text instead of showing `${noActionMessage(x)}` literally.
+
+
+## Startup detail sync
+v2.31 uses one explicit startup sync path so the default Brake system — Manual test Data Module always renders in the right-hand detail pane on first load.
+
+
+## Detail-pane runtime fix
+v2.31 fixes `noActionMessage()` calling the nonexistent `getW()` function. It now uses `wf()`, preventing the detail pane from crashing when the selected Data Module has no action available for the current role.
