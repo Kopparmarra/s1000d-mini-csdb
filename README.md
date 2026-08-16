@@ -92,20 +92,24 @@ v2.17 patches the actual Media-card renderer so the visible ICN code is a real n
 
 
 ## ICN Library view reset
-v2.23 rebuilds the ICN Library table whenever it is entered, preventing stale Where-used headers from remaining after Media-to-ICN navigation.
+v2.24 rebuilds the ICN Library table whenever it is entered, preventing stale Where-used headers from remaining after Media-to-ICN navigation.
 
 
 ## ICN state cleanup
-v2.23 removes the obsolete v2.12 ICN Where-used branch from apply(), leaving a single source of truth for ICN Library rendering.
+v2.24 removes the obsolete v2.12 ICN Where-used branch from apply(), leaving a single source of truth for ICN Library rendering.
 
 
 ## ICN detail sync
-v2.23 ensures ICN detail rendering takes precedence whenever the app is in ICN Library mode, preventing a previously selected DM detail pane from remaining visible.
+v2.24 ensures ICN detail rendering takes precedence whenever the app is in ICN Library mode, preventing a previously selected DM detail pane from remaining visible.
 
 
 ## Root-cause navigation fix
-v2.23 restores the missing renderCount() function. Its absence caused a ReferenceError after centre-pane rendering, preventing detail-pane updates during startup and ICN navigation.
+v2.24 restores the missing renderCount() function. Its absence caused a ReferenceError after centre-pane rendering, preventing detail-pane updates during startup and ICN navigation.
 
 
 ## Default object tabs
-v2.23 opens every selected Data Module on Content and every Publication Module on Structure, preventing a tab selected on one object from carrying over to another.
+v2.24 opens every selected Data Module on Content and every Publication Module on Structure, preventing a tab selected on one object from carrying over to another.
+
+
+## About panel
+v2.24 reframes the About copy in first person and adds creator attribution to Lars Nilsson.
