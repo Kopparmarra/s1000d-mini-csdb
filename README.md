@@ -52,4 +52,56 @@ The simulated external authoring editor now uses a structured, editable Author v
 
 
 ## Publication Module lab
-v2.7 adds hierarchical PM structure, assembled publication preview, and local/simulated Publication Module creation stored in browser localStorage.
+v2.14 adds hierarchical PM structure, assembled publication preview, and local/simulated Publication Module creation stored in browser localStorage.
+
+
+## Internal references
+v2.14 makes rendered S1000D internal references interactive. Clicking a reference opens a small local reference card with ID/type and resolved record details where available.
+
+
+## Internal reference fix
+v2.14 preserves internalRefId in rendered HTML and uses delegated click/keyboard handling so references remain interactive after navigation and re-rendering.
+
+
+## Illustration references
+v2.14 resolves figure internal references to their ICN. Browser-viewable assets are shown inline; CGM source illustrations are identified explicitly and can be opened in the ICN Library.
+
+
+## Navigation fix
+v2.14 fixes stale ICN-library rows being rendered in the object table when navigating back to a Data Module.
+
+
+## ICN Where used
+v2.14 adds a focused Where-used view for ICNs. The centre list now shows only Data Modules that reference the selected illustration, with a clear count and Back to ICN Library action.
+
+
+## ICN Where-used navigation
+v2.14 keeps the centre column focused on only the Data Modules that use an ICN when navigating from that ICN's Where-used list.
+
+
+## Startup detail fix
+v2.14 restores the default Brake system — Manual test detail pane on initial page load while keeping ICN Where-used focus navigation intact.
+
+
+## Media navigation
+v2.17 makes ICN codes in a Data Module's Media tab clickable, opening the matching illustration directly in ICN Library.
+
+
+## Media-to-ICN navigation fix
+v2.17 patches the actual Media-card renderer so the visible ICN code is a real navigation button to ICN Library.
+
+
+## ICN Library view reset
+v2.22 rebuilds the ICN Library table whenever it is entered, preventing stale Where-used headers from remaining after Media-to-ICN navigation.
+
+
+## ICN state cleanup
+v2.22 removes the obsolete v2.12 ICN Where-used branch from apply(), leaving a single source of truth for ICN Library rendering.
+
+
+## ICN detail sync
+v2.22 ensures ICN detail rendering takes precedence whenever the app is in ICN Library mode, preventing a previously selected DM detail pane from remaining visible.
+
+
+## Root-cause navigation fix
+v2.22 restores the missing renderCount() function. Its absence caused a ReferenceError after centre-pane rendering, preventing detail-pane updates during startup and ICN navigation.
