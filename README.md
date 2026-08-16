@@ -49,3 +49,7 @@ A checked-out Data Module is now opened in a separate **Authoring Editor** simul
 
 ## v1.1
 The simulated external authoring editor now uses a structured, editable Author view. Semantic hierarchy controls typography: body text remains regular, headings/parent steps are semibold, lists preserve hierarchy, and internal references and alerts retain their visual treatment.
+
+
+## Publication Module lab
+v2.7 adds hierarchical PM structure, assembled publication preview, and local/simulated Publication Module creation stored in browser localStorage.

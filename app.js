@@ -8,7 +8,6 @@ function pickDefaultDM(){
       || null;
 }
 
-state.selected=pickDefaultDM();
 const WF_KEY='s1000d-mini-csdb-workflow-v4';
 const ASSET_FILES=["ICN-81205-S1000D0400-001-01.PNG", "ICN-B6865-GHS02-001-01.SVG", "ICN-B6865-GHS07-001-01.SVG", "ICN-B6865-S1000D0726-001-01.PNG", "ICN-C0419-S1000D0360-001-01.PNG", "ICN-C0419-S1000D0360-001-01.SVG", "ICN-C0419-S1000D0363-001-01.JPG", "ICN-C0419-S1000D0364-001-01.JPG", "ICN-C0419-S1000D0370-001-01.PNG", "ICN-C0419-S1000D0371-001-01.JPG", "ICN-C0419-S1000D0372-001-01.JPG", "ICN-C0419-S1000D0373-001-01.JPG", "ICN-C0419-S1000D0374-001-01.JPG", "ICN-C0419-S1000D0384-001-01.GIF", "ICN-FAPE3-S1000D0101-001-01.JPG", "ICN-FAPE3-S1000D0102-001-01.JPG", "ICN-S3627-S1000D0619-001-01.PNG"];
 
@@ -28,6 +27,165 @@ function currentIssue(x){const h=wf(x).issueHistory;return h.length?h[0].issue:(
 function recentWorkflow(){const rows=[];for(const x of state.items){for(const h of wf(x).history||[])rows.push({...h,x})}return rows.sort((a,b)=>String(b.ts).localeCompare(String(a.ts))).slice(0,8)}
 function dashboardStats(){const dms=state.items.filter(x=>x.kind==='DM');const statuses={Issued:0,'In Work':0,'In Review':0,'Awaiting Approval':0};for(const x of dms){const s=wf(x).status;if(Object.prototype.hasOwnProperty.call(statuses,s))statuses[s]++}return {objects:state.items.length,dms:dms.length,icns:icnLibrary().length,pms:state.items.filter(x=>x.kind==='PM').length,statuses}}
 
+
+/* v2.6 Publication Module lab -------------------------------------------- */
+const LOCAL_PM_KEY='s1000d-mini-csdb-local-pms-v1';
+
+function escXml(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function loadLocalPms(){
+  try{const a=JSON.parse(localStorage.getItem(LOCAL_PM_KEY)||'[]');return Array.isArray(a)?a:[]}
+  catch(e){return []}
+}
+function saveLocalPms(){
+  localStorage.setItem(LOCAL_PM_KEY,JSON.stringify(state.items.filter(x=>x.kind==='PM'&&x.localPm)))
+}
+function hydrateLocalPms(){
+  const seen=new Set(state.items.map(x=>x.code));
+  for(const pm of loadLocalPms()){
+    if(pm?.code&&!seen.has(pm.code)){state.items.push(pm);seen.add(pm.code)}
+  }
+}
+function nextLocalPmCode(){
+  const nums=state.items.filter(x=>x.kind==='PM'&&x.localPm)
+    .map(x=>parseInt((x.code.match(/(\d{5})-00$/)||[])[1]||'0',10)).filter(Number.isFinite);
+  return `PMC-LOCAL-DEMO-${String((nums.length?Math.max(...nums):0)+1).padStart(5,'0')}-00`
+}
+function flatPmRefs(sections){
+  const out=[];for(const s of (sections||[]))for(const r of (s.refs||[]))if(r&&!out.includes(r))out.push(r);return out
+}
+function directKids(el,name){return [...(el?.children||[])].filter(c=>c.localName===name)}
+function parsePmEntry(entry){
+  const title=(directKids(entry,'pmEntryTitle')[0]?.textContent||'Publication section').replace(/\s+/g,' ').trim();
+  const refs=[];
+  for(const child of [...entry.children]){
+    if(child.localName==='dmRef'){const dc=q(child,'dmCode');if(dc)refs.push({kind:'DM',code:reconstructDmCode(dc)})}
+    if(child.localName==='pmRef'){const pc=q(child,'pmCode');if(pc){const a=n=>pc.getAttribute(n)||'';refs.push({kind:'PM',code:`PMC-${a('modelIdentCode')}-${a('pmIssuer')}-${a('pmNumber')}-${a('pmVolume')}`})}}
+  }
+  return {title,refs,children:directKids(entry,'pmEntry').map(parsePmEntry)}
+}
+function pmStructure(x){
+  if(x.localPm)return (x.pmSections||[]).map(s=>({title:s.title||'Publication section',refs:(s.refs||[]).map(code=>({kind:'DM',code})),children:[]}));
+  if(x.raw){try{
+    const doc=new DOMParser().parseFromString(x.raw,'application/xml'),content=q(doc.documentElement,'content');
+    const entries=directKids(content,'pmEntry').map(parsePmEntry);if(entries.length)return entries
+  }catch(e){}}
+  return [{title:x.title||'Publication content',refs:(x.refs||[]).map(code=>({kind:'DM',code})),children:[]}]
+}
+function renderPmTreeNodes(nodes,depth=0){
+  if(!nodes?.length)return '<p class="muted">No Publication Module entries found.</p>';
+  return `<ul class="pm-structure-list depth-${depth}">${nodes.map(n=>`<li>
+    <div class="pm-section-title">${esc(n.title)}</div>
+    ${(n.refs||[]).length?`<ul class="pm-ref-list">${n.refs.map(r=>{const y=findByCode(r.code);return `<li><button class="pm-ref-btn" data-r="${esc(r.code)}"><code>${esc(r.code)}</code><span>${esc(y?.title||'Referenced object')}</span></button></li>`}).join('')}</ul>`:''}
+    ${renderPmTreeNodes(n.children||[],depth+1)}
+  </li>`).join('')}</ul>`
+}
+
+function cleanPreviewHeading(s=''){
+  return String(s)
+    .replace(/\s+/g,' ')
+    .replace(/\bPMdata\b/gi,'PM data')
+    .replace(/\bpublication\b/i,m=>m.charAt(0).toUpperCase()+m.slice(1))
+    .trim();
+}
+
+function collectPmEntries(nodes,out=[]){
+  for(const n of (nodes||[])){out.push({type:'section',title:n.title});for(const r of (n.refs||[])){const x=findByCode(r.code);if(x)out.push({type:'object',item:x})}collectPmEntries(n.children||[],out)}return out
+}
+function openPublicationPreview(pm){
+  const entries=collectPmEntries(pmStructure(pm)),objects=entries.filter(e=>e.type==='object');
+  const ov=document.createElement('div');ov.className='pm-preview-overlay';
+  let oi=0;
+  ov.innerHTML=`<div class="pm-preview-window">
+    <div class="pm-preview-head"><div><span class="eyebrow">${pm.localPm?'LOCAL / SIMULATED':'PUBLICATION MODULE PREVIEW'}</span><h2>${esc(pm.title||pm.code)}</h2><div class="detail-code">${esc(pm.code)}</div></div><button class="icon-btn" data-close>×</button></div>
+    <div class="pm-preview-layout">
+      <nav class="pm-preview-toc"><b>Contents</b>${objects.map((e,i)=>`<button data-jump="pmprev-${i}">${esc(wf(e.item).draftTitle||e.item.title||e.item.code)}</button>`).join('')}</nav>
+      <main class="pm-preview-doc"><div class="source-note"><b>Publication preview.</b> Referenced Data Modules are assembled in PM order. This is an educational browser preview, not a production publishing engine.</div>
+      ${entries.map(e=>{
+        if(e.type==='section')return `<h2 class="pm-preview-section">${esc(cleanPreviewHeading(e.title))}</h2>`;
+        const x=e.item,w=wf(x),id=`pmprev-${oi++}`;
+        const structured=!w.draftContent&&!w.draftHtml?semanticContentHtml(x):'';
+        let body=w.draftHtml?`<div class="structured-content draft-structured">${w.draftHtml}</div>`:(w.draftContent?w.draftContent.split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join(''):(structured||`<p>${esc(x.contentText||'No content preview available.')}</p>`));
+        const tmp=document.createElement('div');tmp.innerHTML=body;
+        tmp.querySelectorAll('.source-note').forEach(n=>n.remove());
+        body=tmp.innerHTML;
+        return `<article id="${id}" class="pm-preview-module"><div class="pm-preview-module-head"><span>DATA MODULE</span><code>${esc(x.code)}</code><h3>${esc(w.draftTitle||x.title||x.code)}</h3></div>${body}</article>`
+      }).join('')}</main>
+    </div></div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('[data-close]').onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  ov.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>ov.querySelector('#'+b.dataset.jump)?.scrollIntoView({behavior:'smooth',block:'start'}))
+}
+function localPmRaw(pm){
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<pm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="pm.xsd">\n  <identAndStatusSection>\n    <pmAddress><pmIdent><!-- ${escXml(pm.code)} --></pmIdent><pmAddressItems><pmTitle>${escXml(pm.title)}</pmTitle></pmAddressItems></pmAddress>\n    <pmStatus issueType="new"><security securityClassification="01"/></pmStatus>\n  </identAndStatusSection>\n  <content>\n${(pm.pmSections||[]).map(s=>`    <pmEntry>\n      <pmEntryTitle>${escXml(s.title)}</pmEntryTitle>\n${(s.refs||[]).map(r=>`      <dmRef><dmRefIdent><!-- ${escXml(r)} --></dmRefIdent></dmRef>`).join('\n')}\n    </pmEntry>`).join('\n')}\n  </content>\n</pm>`
+}
+
+function openPmBuilder(existing=null){
+  const draft={code:existing?.code||nextLocalPmCode(),title:existing?.title||'My bicycle publication',sections:existing?.pmSections?JSON.parse(JSON.stringify(existing.pmSections)):[{title:'Publication content',refs:[]}]};
+  const ov=document.createElement('div');ov.className='pm-builder-overlay';
+  ov.innerHTML=`<div class="pm-builder-window">
+    <div class="pm-builder-head"><div><span class="eyebrow">${existing?'EDIT LOCAL PUBLICATION MODULE':'CREATE PUBLICATION MODULE'}</span><h2>${existing?'Edit Publication Module':'New Publication Module'}</h2></div><button class="icon-btn" data-close>×</button></div>
+    <div class="pm-builder-meta"><label>Publication Module Code<input id="pmCode" value="${esc(draft.code)}" readonly></label><label>Title<input id="pmTitle" value="${esc(draft.title)}"></label></div>
+    <div class="pm-builder-layout">
+      <section class="pm-builder-library"><div class="pm-builder-section-head"><b>Available Data Modules</b><input id="pmSearch" placeholder="Search DMC or title…"></div><div id="pmDmLibrary" class="pm-dm-library"></div></section>
+      <section class="pm-builder-structure"><div class="pm-builder-section-head"><b>Publication structure</b><button id="pmAddSection" class="secondary">+ Add section</button></div><div id="pmSections"></div></section>
+    </div>
+    <div class="pm-builder-footer"><span class="muted">Add Data Modules, then drag them to reorder or move them between sections.</span><div><button class="secondary" data-close>Cancel</button><button id="pmSave" class="primary">Save Publication Module</button></div></div>
+  </div>`;
+  document.body.appendChild(ov);
+  let drag=null;
+  const allDms=()=>state.items.filter(x=>x.kind==='DM');
+  function renderLibrary(){
+    const qv=(ov.querySelector('#pmSearch').value||'').toLowerCase(),used=new Set(flatPmRefs(draft.sections));
+    ov.querySelector('#pmDmLibrary').innerHTML=allDms().filter(x=>!qv||(x.code+' '+x.title).toLowerCase().includes(qv)).map(x=>`<div class="pm-lib-row"><div><code>${esc(x.code)}</code><span>${esc(x.title||'')}</span></div><button data-add="${esc(x.code)}" ${used.has(x.code)?'disabled':''}>${used.has(x.code)?'Added':'Add'}</button></div>`).join('');
+    ov.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{if(!draft.sections.length)draft.sections.push({title:'Publication content',refs:[]});draft.sections[0].refs.push(b.dataset.add);renderAll()})
+  }
+  function renderSections(){
+    ov.querySelector('#pmSections').innerHTML=draft.sections.map((s,si)=>`<div class="pm-build-section" data-section="${si}">
+      <div class="pm-build-section-title"><input data-stitle="${si}" value="${esc(s.title)}"><button data-del-section="${si}" ${draft.sections.length===1?'disabled':''}>×</button></div>
+      <div class="pm-dropzone" data-zone="${si}">${(s.refs||[]).map((r,ri)=>{const x=findByCode(r);return `<div class="pm-drag-row" draggable="true" data-si="${si}" data-ri="${ri}"><span class="drag-handle">⋮⋮</span><div><code>${esc(r)}</code><span>${esc(x?.title||'Data Module')}</span></div><button data-remove="${si}:${ri}">×</button></div>`}).join('')||'<div class="pm-empty-drop">Drop or add Data Modules here</div>'}</div>
+    </div>`).join('');
+    ov.querySelectorAll('[data-stitle]').forEach(i=>i.oninput=()=>draft.sections[+i.dataset.stitle].title=i.value);
+    ov.querySelectorAll('[data-del-section]').forEach(b=>b.onclick=()=>{const si=+b.dataset.delSection;if(draft.sections[si].refs.length&&!confirm('Remove this section and its Data Modules?'))return;draft.sections.splice(si,1);renderAll()});
+    ov.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{const [si,ri]=b.dataset.remove.split(':').map(Number);draft.sections[si].refs.splice(ri,1);renderAll()});
+    ov.querySelectorAll('.pm-drag-row').forEach(row=>{
+      row.ondragstart=e=>{drag={si:+row.dataset.si,ri:+row.dataset.ri};e.dataTransfer.effectAllowed='move'};
+      row.ondragover=e=>{e.preventDefault();row.classList.add('drag-over')};
+      row.ondragleave=()=>row.classList.remove('drag-over');
+      row.ondrop=e=>{e.preventDefault();row.classList.remove('drag-over');if(!drag)return;const toS=+row.dataset.si,toI=+row.dataset.ri;const code=draft.sections[drag.si].refs.splice(drag.ri,1)[0];let idx=toI;if(drag.si===toS&&drag.ri<toI)idx--;draft.sections[toS].refs.splice(Math.max(0,idx),0,code);drag=null;renderAll()}
+    });
+    ov.querySelectorAll('.pm-dropzone').forEach(zone=>{
+      zone.ondragover=e=>{e.preventDefault();zone.classList.add('drag-over')};zone.ondragleave=()=>zone.classList.remove('drag-over');
+      zone.ondrop=e=>{if(e.target.closest('.pm-drag-row'))return;e.preventDefault();zone.classList.remove('drag-over');if(!drag)return;const code=draft.sections[drag.si].refs.splice(drag.ri,1)[0];draft.sections[+zone.dataset.zone].refs.push(code);drag=null;renderAll()}
+    })
+  }
+  function renderAll(){renderLibrary();renderSections()}
+  ov.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>ov.remove());
+  ov.querySelector('#pmSearch').oninput=renderLibrary;
+  ov.querySelector('#pmAddSection').onclick=()=>{draft.sections.push({title:`Section ${draft.sections.length+1}`,refs:[]});renderAll()};
+  ov.querySelector('#pmSave').onclick=()=>{
+    const title=ov.querySelector('#pmTitle').value.trim();if(!title){alert('Enter a Publication Module title.');return}
+    const sections=draft.sections.map(s=>({title:(s.title||'Publication section').trim(),refs:[...(s.refs||[])]}));
+    const now=new Date(),date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    let pm=existing;
+    if(!pm){
+      pm={filename:draft.code+'.XML',kind:'PM',code:draft.code,title,issueNumber:'001',inWork:'00',language:'en-US',issueDate:date,issueType:'new',security:'01',schema:'pm',refs:[],icns:[],contentText:'',paras:[],raw:'',localPm:true,pmSections:[]};
+      state.items.push(pm)
+    }
+    pm.title=title;pm.pmSections=sections;pm.refs=flatPmRefs(sections);pm.raw=localPmRaw({...pm,title,pmSections:sections});saveLocalPms();
+    state.system='All';state.kind='PM';state.query='';state.library='objects';state.selected=pm;state.tab='pm';
+    ov.remove();renderTree();document.querySelector('#kind').value='PM';document.querySelector('#search').value='';apply();renderDetail()
+  };
+  renderAll()
+}
+function renderPmStructureTab(x,b){
+  const local=x.localPm?'<span class="status st-in-work">Local / simulated</span>':'';
+  b.innerHTML=`<div class="pm-structure-head"><div><b>Publication Module structure</b><span>References are resolved against objects in this CSDB.</span></div><div>${local}<button id="pmPreviewBtn" class="primary">Preview publication</button>${x.localPm?'<button id="pmEditBtn" class="secondary">Edit PM</button>':''}</div></div>${renderPmTreeNodes(pmStructure(x))}`;
+  b.querySelectorAll('[data-r]').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});
+  b.querySelector('#pmPreviewBtn').onclick=()=>openPublicationPreview(x);
+  b.querySelector('#pmEditBtn')?.addEventListener('click',()=>openPmBuilder(x))
+}
+
 function ensureSelectedVisible(){
   if(!state.selected) return;
   const exists = state.filtered.some(x => x.file===state.selected.file || x.key===state.selected.key);
@@ -40,12 +198,12 @@ function ensureSelectedVisible(){
 }
 
 function apply(){ensureSelectedVisible();if(state.library==='icn'){const q=state.query.trim().toLowerCase();state.filtered=icnLibrary().filter(i=>!q||(i.ref+' '+(i.file||'')+' '+i.usedBy.map(x=>x.title).join(' ')).toLowerCase().includes(q));renderTable();renderCount();return}let a=state.items;if(state.system!=='All')a=a.filter(x=>sysOf(x)===state.system);if(state.kind!=='All')a=a.filter(x=>x.kind===state.kind);const q=state.query.trim().toLowerCase();if(q)a=a.filter(x=>(x.code+' '+(wf(x).draftTitle||x.title)+' '+x.filename+' '+x.schema).toLowerCase().includes(q));state.filtered=a;renderTable();renderCount()}
-function render(){document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v2.5</span><button id="courseBtn" class="top-tool-btn" type="button">Guided Course</button><button id="aboutBtn" class="top-tool-btn subtle" type="button">About</button><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
- document.querySelector('#search').oninput=e=>{state.query=e.target.value;apply()};document.querySelector('#kind').onchange=e=>{state.kind=e.target.value;apply()};document.querySelector('#role').value=state.role;document.querySelector('#role').onchange=e=>{state.role=e.target.value;renderDetail()};document.querySelector('#reset').onclick=()=>{state.query='';state.kind='All';state.system='All';state.library='objects';state.selected=pickDefaultDM();state.selectedIcn=null;document.querySelector('#search').value='';document.querySelector('#kind').value='All';renderTree();apply();renderDetail()};document.querySelector('#loadBtn').onclick=()=>document.querySelector('#folder').click();document.querySelector('#folder').onchange=importFiles;document.querySelector('#clearWf').onclick=()=>{if(confirm('Reset all simulated workflow states and audit history?')){localStorage.removeItem(WF_KEY);Object.keys(workflow).forEach(k=>delete workflow[k]);apply();renderDetail()}};renderTree();apply();renderDetail();}
+function render(){document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v2.7</span><button id="courseBtn" class="top-tool-btn" type="button">Guided Course</button><button id="aboutBtn" class="top-tool-btn subtle" type="button">About</button><button id="createPmBtn" class="top-tool-btn" type="button">Create PM</button><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
+ document.querySelector('#search').oninput=e=>{state.query=e.target.value;apply()};document.querySelector('#kind').onchange=e=>{state.kind=e.target.value;apply()};document.querySelector('#role').value=state.role;document.querySelector('#role').onchange=e=>{state.role=e.target.value;renderDetail()};document.querySelector('#reset').onclick=()=>{state.query='';state.kind='All';state.system='All';state.library='objects';state.selected=pickDefaultDM();state.selectedIcn=null;document.querySelector('#search').value='';document.querySelector('#kind').value='All';renderTree();apply();renderDetail()};document.querySelector('#createPmBtn').onclick=()=>openPmBuilder();document.querySelector('#loadBtn').onclick=()=>document.querySelector('#folder').click();document.querySelector('#folder').onchange=importFiles;document.querySelector('#clearWf').onclick=()=>{if(confirm('Reset all simulated workflow states and audit history?')){localStorage.removeItem(WF_KEY);Object.keys(workflow).forEach(k=>delete workflow[k]);apply();renderDetail()}};renderTree();apply();renderDetail();}
 function renderTree(){const systems=[...new Set(state.items.map(sysOf))].sort();const counts=s=>state.items.filter(x=>sysOf(x)===s).length;const icns=icnLibrary();document.querySelector('#tree').innerHTML=`<button class="${state.library==='objects'&&state.system==='All'?'active':''}" data-s="All">All objects <span class="n">${state.items.length}</span></button>`+systems.map(s=>`<button class="${state.library==='objects'&&state.system===s?'active':''}" data-s="${esc(s)}">${esc(s)} <span class="n">${counts(s)}</span></button>`).join('')+`<div class="tree-sep"></div><button class="${state.library==='icn'?'active':''}" data-s="__ICN__">ICN Library <span class="n">${icns.length}</span></button>`;document.querySelectorAll('#tree button').forEach(b=>b.onclick=()=>{if(b.dataset.s==='__ICN__'){state.library='icn';state.selected=null;state.selectedIcn=icns[0]||null}else{state.library='objects';state.system=b.dataset.s;state.selectedIcn=null}renderTree();apply();renderDetail()})}
-function renderTable(){const tb=document.querySelector('#rows'),th=document.querySelector('#thead'),main=document.querySelector('#main'),tableWrap=document.querySelector('.table-wrap');main?.classList.remove('dashboard-mode');if(!document.querySelector('#rows')){tableWrap.innerHTML='<table><thead id="thead"></thead><tbody id="rows"></tbody></table>'}const tb2=document.querySelector('#rows'),th2=document.querySelector('#thead');if(state.library==='icn'){th2.innerHTML='<tr><th>Preview</th><th>ICN</th><th>Format</th><th>Referenced by</th></tr>';tb2.innerHTML=state.filtered.map((i,n)=>`<tr data-icn="${n}" class="${state.selectedIcn&&state.selectedIcn.ref===i.ref?'sel':''}"><td class="icn-thumb">${i.file?`<img src="assets/${encodeURI(i.file)}" alt="">`:'<span>—</span>'}</td><td class="code">${esc(i.ref)}</td><td>${esc(i.file?(i.file.split('.').pop()||'').toUpperCase():'Referenced')}</td><td>${i.usedBy.length}</td></tr>`).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>{state.selectedIcn=state.filtered[+r.dataset.icn];renderTable();renderDetail()});return}th2.innerHTML='<tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr>';tb2.innerHTML=state.filtered.map(x=>{const w=wf(x),title=w.draftTitle||x.title;return `<tr data-i="${state.items.indexOf(x)}" class="${state.selected===x?'sel':''}"><td><span class="pill">${esc(typeLabel(x))}</span></td><td class="code">${esc(x.code)}${w.checkedOut?'<span class="lock">● checked out</span>':''}</td><td>${esc(title||'—')}</td><td>${esc(x.issueNumber||'—')}</td><td><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></td></tr>`}).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>selectItem(state.items[+r.dataset.i]))}
+function renderTable(){const tb=document.querySelector('#rows'),th=document.querySelector('#thead'),main=document.querySelector('#main'),tableWrap=document.querySelector('.table-wrap');main?.classList.remove('dashboard-mode');if(!document.querySelector('#rows')){tableWrap.innerHTML='<table><thead id="thead"></thead><tbody id="rows"></tbody></table>'}const tb2=document.querySelector('#rows'),th2=document.querySelector('#thead');if(state.library==='icn'){th2.innerHTML='<tr><th>Preview</th><th>ICN</th><th>Format</th><th>Referenced by</th></tr>';tb2.innerHTML=state.filtered.map((i,n)=>`<tr data-icn="${n}" class="${state.selectedIcn&&state.selectedIcn.ref===i.ref?'sel':''}"><td class="icn-thumb">${i.file?`<img src="assets/${encodeURI(i.file)}" alt="">`:'<span>—</span>'}</td><td class="code">${esc(i.ref)}</td><td>${esc(i.file?(i.file.split('.').pop()||'').toUpperCase():'Referenced')}</td><td>${i.usedBy.length}</td></tr>`).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>{state.selectedIcn=state.filtered[+r.dataset.icn];renderTable();renderDetail()});return}th2.innerHTML='<tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr>';tb2.innerHTML=state.filtered.map(x=>{const w=wf(x),title=w.draftTitle||x.title;return `<tr data-i="${state.items.indexOf(x)}" class="${state.selected===x?'sel':''}"><td><span class="pill">${esc(typeLabel(x))}${x.localPm?' · Local':''}</span></td><td class="code">${esc(x.code)}${w.checkedOut?'<span class="lock">● checked out</span>':''}</td><td>${esc(title||'—')}</td><td>${esc(x.issueNumber||'—')}</td><td><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></td></tr>`}).join('');tb2.querySelectorAll('tr').forEach(r=>r.onclick=()=>selectItem(state.items[+r.dataset.i]))}
 function renderCount(){document.querySelector('#count').textContent=state.library==='dashboard'?'Bike CSDB overview':state.library==='icn'?`${state.filtered.length} ICNs`:`${state.filtered.length} of ${state.items.length} objects`}
-function selectItem(x){state.library='objects';state.selected=x;state.selectedIcn=null;renderTree();renderTable();renderDetail()}
+function selectItem(x){state.library='objects';state.selected=x;state.selectedIcn=null;if(x.kind==='PM')state.tab='pm';else if(state.tab==='pm')state.tab='content';renderTree();renderTable();renderDetail()}
 
 function noActionMessage(item){
   const status=getW(item).status;
@@ -63,7 +221,7 @@ function noActionMessage(item){
     if(status==='In Review') return 'No action available — this Data Module is currently with the Reviewer.';
     if(status==='Awaiting Approval') return 'No action available — this Data Module is awaiting approval.';
   }
-  return noActionMessage(x);
+  return 'No action available for this role/status.';
 }
 
 function allowedActions(x){const w=wf(x),r=state.role,a=[];if(x.kind!=='DM')return a;if(r==='Author'&&w.status==='Issued')a.push(['checkout','Check out']);if(r==='Author'&&w.status==='In Work'&&w.checkedOut)a.push(['edit','Open in Authoring Editor'],['review','Submit for review'],['discard','Discard changes']);if(r==='Reviewer'&&w.status==='In Review')a.push(['changes','Request changes'],['approvegate','Send for approval']);if(r==='Approver'&&w.status==='Awaiting Approval')a.push(['reject','Return to author'],['issue','Approve & issue']);return a}
@@ -449,11 +607,13 @@ function valueInRange(value,expr){const [a,b]=expr.split('~');if(!a||!b)return f
 function brexChecks(x){if(x.kind!=='DM'||!x.raw)return [];const doc=parseRaw(x.raw);if(!doc)return [];const dm=q(doc.documentElement,'dmCode'),sec=q(doc.documentElement,'security');if(!dm)return [];const wanted={"//dmAddress/dmIdent/dmCode/@modelIdentCode":dm.getAttribute('modelIdentCode')||'',"//dmAddress/dmIdent/dmCode/@systemCode":dm.getAttribute('systemCode')||'',"//dmAddress/dmIdent/dmCode/@infoCode":dm.getAttribute('infoCode')||'',"//security/@securityClassification":sec?.getAttribute('securityClassification')||''};return brexRuleSet().filter(r=>Object.prototype.hasOwnProperty.call(wanted,r.path)).map(r=>{const actual=wanted[r.path];const pass=r.vals.some(v=>v.form==='range'?valueInRange(actual,v.allowed):actual===v.allowed);return {...r,actual,pass}})}
 function renderMedia(x,b){if(!x.icns?.length){b.innerHTML='<div class="empty">No ICN references found in this object.</div>';return}b.innerHTML=`<div class="source-note">Illustrations are resolved from ICN references in the Bike XML. Browser-viewable JPG, PNG, GIF and SVG assets are previewed when included; some Bike illustrations are CGM and are listed without preview.</div><div class="media-grid">${x.icns.map(ref=>{const f=assetFor(ref);return `<article class="media-card"><div class="media-preview">${f?`<img src="assets/${encodeURI(f)}" alt="${esc(ref)}">`:'<div class="media-missing">Preview unavailable<br><small>likely CGM / source asset not bundled</small></div>'}</div><div class="media-meta"><b>${esc(ref)}</b>${f?`<span>${esc(f)}</span>`:'<span>Referenced ICN</span>'}</div></article>`}).join('')}</div>`}
 function renderBrex(x,b){if(x.kind!=='DM'){b.innerHTML='<div class="empty">BREX checks are shown for Data Modules.</div>';return}const checks=brexChecks(x);if(!checks.length){b.innerHTML='<div class="empty">No supported Bike BREX checks could be evaluated for this object.</div>';return}const passed=checks.filter(c=>c.pass).length;b.innerHTML=`<div class="source-note"><b>BREX-informed validation demo.</b> These checks are read from the actual Bike BREX Data Module in this dataset. This is intentionally a small subset, not a complete BREX engine or S1000D conformance validator.</div><div class="validation-summary"><strong>${passed}/${checks.length}</strong><span>supported rules passed</span></div><div class="rule-list">${checks.map(c=>`<article class="rule ${c.pass?'pass':'fail'}"><div class="rule-result">${c.pass?'PASS':'FAIL'}</div><div><b>${esc(c.br)} · ${esc(c.use)}</b><code>${esc(c.path)}</code><p>Actual: <strong>${esc(c.actual||'—')}</strong></p><p>Allowed: ${esc(c.vals.map(v=>v.allowed).join(', '))}</p></div></article>`).join('')}</div>`}
-function renderTab(x){const b=document.querySelector('#tabbody'),w=wf(x);if(state.tab==='whereused'){const used=incomingRefs(x);b.innerHTML=`<div class="source-note"><b>Where used</b> shows objects that reference this managed object. This is a core CSDB reuse/impact-analysis concept.</div>${used.length?`<div class="refs">${used.map(src=>`<button data-r="${esc(src.code)}"><b>${esc(src.code)}</b><br><span>${esc(src.title||typeLabel(src))}</span></button>`).join('')}</div>`:'<div class="empty">No incoming DM/PM references found in the parsed Bike dataset.</div>'}`;b.querySelectorAll('[data-r]').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}if(state.tab==='history'){const h=w.issueHistory||[];b.innerHTML=`<div class="source-note"><b>Issue history.</b> The first row is the issue from the source Bike XML. Later rows are simulated releases created by this emulator workflow.</div><div class="issue-history">${h.map(e=>`<div class="issue-row simulated"><strong>${esc(e.issue)}-${esc(e.inWork||'00')}</strong><span>${new Date(e.ts).toLocaleString()}</span><b>Simulated release</b><p>${esc(e.note||'')}</p></div>`).join('')}<div class="issue-row source"><strong>${esc(x.issueNumber||'—')}-${esc(x.inWork||'—')}</strong><span>${esc(x.issueDate||'Source dataset')}</span><b>Source Bike XML</b><p>${esc(x.issueType||'Original managed object issue')}</p></div></div>`;return}if(state.tab==='media'){renderMedia(x,b);return}if(state.tab==='brex'){renderBrex(x,b);return}if(state.tab==='xml'){b.innerHTML=`<div class="source-note">Source XML from the imported Bike sample. Workflow edits are intentionally stored separately in localStorage and do not modify the source XML.</div><pre class="xml">${esc(x.raw||'Raw XML unavailable for imported object')}</pre>`;return}if(state.tab==='workflow'){if(x.kind!=='DM'){b.innerHTML='<div class="empty">Workflow simulation is enabled for Data Modules.</div>';return}b.innerHTML=`<div class="wf-card"><h3>Audit trail</h3>${w.history.length?`<div class="audit">${w.history.map(h=>`<div><time>${new Date(h.ts).toLocaleString()}</time><b>${esc(h.action)}</b><span>${esc(h.role)}${h.detail?' · '+esc(h.detail):''}</span></div>`).join('')}</div>`:'<p class="muted">No simulated workflow activity yet. Switch to Author and check out the module to begin.</p>'}</div>`;return}if(state.tab==='refs'){if(!x.refs.length){b.innerHTML='<div class="empty">No dmRef references found.</div>';return}b.innerHTML='<div class="refs">'+x.refs.map(r=>`<button data-r="${esc(r)}">${esc(r)}${findByCode(r)?' ↗':''}</button>`).join('')+'</div>';b.querySelectorAll('button').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}if(state.tab==='pm'){if(x.kind!=='PM'){b.innerHTML=`<div class="pm-tree"><b>Outgoing references</b>${x.refs.length?'<ul>'+x.refs.map(r=>`<li><button data-r="${esc(r)}">${esc(r)}</button></li>`).join('')+'</ul>':'<p>No referenced data modules.</p>'}</div>`;b.querySelectorAll('button').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}b.innerHTML=`<div class="pm-tree"><b>Publication module references</b><ul>${x.refs.map(r=>`<li><button data-r="${esc(r)}">${esc(r)}</button></li>`).join('')}</ul></div>`;b.querySelectorAll('button').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}const ps=(x.paras||[]).slice(0,35);const changed=w.draftTitle&&w.draftTitle!==x.title||w.draftContent||w.draftHtml;const banner=changed?`<div class="draft-banner"><b>Working copy from authoring editor</b> These simulated edits are stored locally. The source Bike XML remains unchanged.</div>`:'';const structured=!w.draftContent&&!w.draftHtml?semanticContentHtml(x):'';const body=w.draftHtml?`<div class="structured-content draft-structured">${w.draftHtml}</div>`:(w.draftContent?w.draftContent.split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join(''):(structured||(ps.length?ps.map(p=>`<p>${esc(p)}</p>`).join(''):`<p>${esc(x.contentText||'No content preview available for this object.')}</p>`)));b.innerHTML=banner+body}
+function renderTab(x){const b=document.querySelector('#tabbody'),w=wf(x);if(state.tab==='whereused'){const used=incomingRefs(x);b.innerHTML=`<div class="source-note"><b>Where used</b> shows objects that reference this managed object. This is a core CSDB reuse/impact-analysis concept.</div>${used.length?`<div class="refs">${used.map(src=>`<button data-r="${esc(src.code)}"><b>${esc(src.code)}</b><br><span>${esc(src.title||typeLabel(src))}</span></button>`).join('')}</div>`:'<div class="empty">No incoming DM/PM references found in the parsed Bike dataset.</div>'}`;b.querySelectorAll('[data-r]').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}if(state.tab==='history'){const h=w.issueHistory||[];b.innerHTML=`<div class="source-note"><b>Issue history.</b> The first row is the issue from the source Bike XML. Later rows are simulated releases created by this emulator workflow.</div><div class="issue-history">${h.map(e=>`<div class="issue-row simulated"><strong>${esc(e.issue)}-${esc(e.inWork||'00')}</strong><span>${new Date(e.ts).toLocaleString()}</span><b>Simulated release</b><p>${esc(e.note||'')}</p></div>`).join('')}<div class="issue-row source"><strong>${esc(x.issueNumber||'—')}-${esc(x.inWork||'—')}</strong><span>${esc(x.issueDate||'Source dataset')}</span><b>Source Bike XML</b><p>${esc(x.issueType||'Original managed object issue')}</p></div></div>`;return}if(state.tab==='media'){renderMedia(x,b);return}if(state.tab==='brex'){renderBrex(x,b);return}if(state.tab==='xml'){b.innerHTML=`<div class="source-note">Source XML from the imported Bike sample. Workflow edits are intentionally stored separately in localStorage and do not modify the source XML.</div><pre class="xml">${esc(x.raw||'Raw XML unavailable for imported object')}</pre>`;return}if(state.tab==='workflow'){if(x.kind!=='DM'){b.innerHTML='<div class="empty">Workflow simulation is enabled for Data Modules.</div>';return}b.innerHTML=`<div class="wf-card"><h3>Audit trail</h3>${w.history.length?`<div class="audit">${w.history.map(h=>`<div><time>${new Date(h.ts).toLocaleString()}</time><b>${esc(h.action)}</b><span>${esc(h.role)}${h.detail?' · '+esc(h.detail):''}</span></div>`).join('')}</div>`:'<p class="muted">No simulated workflow activity yet. Switch to Author and check out the module to begin.</p>'}</div>`;return}if(state.tab==='refs'){if(!x.refs.length){b.innerHTML='<div class="empty">No dmRef references found.</div>';return}b.innerHTML='<div class="refs">'+x.refs.map(r=>`<button data-r="${esc(r)}">${esc(r)}${findByCode(r)?' ↗':''}</button>`).join('')+'</div>';b.querySelectorAll('button').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}if(state.tab==='pm'){if(x.kind!=='PM'){b.innerHTML=`<div class="pm-tree"><b>Outgoing references</b>${x.refs.length?'<ul>'+x.refs.map(r=>`<li><button data-r="${esc(r)}">${esc(r)}</button></li>`).join('')+'</ul>':'<p>No referenced data modules.</p>'}</div>`;b.querySelectorAll('button').forEach(q=>q.onclick=()=>{const y=findByCode(q.dataset.r);if(y)selectItem(y)});return}renderPmStructureTab(x,b);return}const ps=(x.paras||[]).slice(0,35);const changed=w.draftTitle&&w.draftTitle!==x.title||w.draftContent||w.draftHtml;const banner=changed?`<div class="draft-banner"><b>Working copy from authoring editor</b> These simulated edits are stored locally. The source Bike XML remains unchanged.</div>`:'';const structured=!w.draftContent&&!w.draftHtml?semanticContentHtml(x):'';const body=w.draftHtml?`<div class="structured-content draft-structured">${w.draftHtml}</div>`:(w.draftContent?w.draftContent.split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join(''):(structured||(ps.length?ps.map(p=>`<p>${esc(p)}</p>`).join(''):`<p>${esc(x.contentText||'No content preview available for this object.')}</p>`)));b.innerHTML=banner+body}
 function findByCode(c){return state.items.find(x=>x.code===c)||state.items.find(x=>x.code.startsWith(c)||c.startsWith(x.code))}
 function reconstructDmCode(el){const a=n=>el.getAttribute(n)||'';return 'DMC-'+[a('modelIdentCode'),a('systemDiffCode'),a('systemCode'),a('subSystemCode')+a('subSubSystemCode'),a('assyCode'),a('disassyCode')+a('disassyCodeVariant'),a('infoCode')+a('infoCodeVariant'),a('itemLocationCode')].join('-')}
 function q(root,name){return [...root.getElementsByTagName('*')].find(e=>e.localName===name)}function qAll(root,name){return [...root.getElementsByTagName('*')].filter(e=>e.localName===name)}function text(e){return e?[...e.childNodes].map(n=>n.textContent).join(' ').replace(/\s+/g,' ').trim():''}
 async function importFiles(e){const files=[...e.target.files].filter(f=>/\.xml$/i.test(f.name));if(!files.length)return;const imported=[];for(const f of files){const raw=await f.text();const doc=new DOMParser().parseFromString(raw,'application/xml');if(doc.querySelector('parsererror'))continue;const root=doc.documentElement;const rt=root.localName;const schemaLoc=root.getAttributeNS('http://www.w3.org/2001/XMLSchema-instance','noNamespaceSchemaLocation')||root.getAttribute('xsi:noNamespaceSchemaLocation')||'';const importedSchema=(schemaLoc.split('/').pop()||'').replace(/\.xsd$/i,'');let kind=rt==='dmodule'?'DM':rt==='pm'?'PM':rt==='dml'?'DML':rt==='ddn'?'DDN':'XML';let code=f.name.split('_')[0];if(kind==='DM'){const dc=q(root,'dmCode');if(dc)code=reconstructDmCode(dc)}const ti=q(root,'dmTitle'),tech=q(ti||root,'techName'),info=q(ti||root,'infoName');const title=[text(tech),text(info)].filter(Boolean).join(' — ')||text(q(root,'pmTitle'))||kind;const ii=q(root,'issueInfo'),lang=q(root,'language'),date=q(root,'issueDate'),stat=q(root,'dmStatus')||q(root,'pmStatus'),sec=q(root,'security');const refs=qAll(root,'dmRef').map(r=>{const dc=q(r,'dmCode');return dc?reconstructDmCode(dc):''}).filter(Boolean);const paras=qAll(root,'para').slice(0,80).map(text).filter(Boolean);imported.push({filename:f.name,kind,code,title,techName:text(tech),infoName:text(info),issueNumber:ii?.getAttribute('issueNumber')||'',inWork:ii?.getAttribute('inWork')||'',language:lang?`${lang.getAttribute('languageIsoCode')||''}-${lang.getAttribute('countryIsoCode')||''}`:'',issueDate:date?[date.getAttribute('year'),date.getAttribute('month'),date.getAttribute('day')].join('-'):'',issueType:stat?.getAttribute('issueType')||'',security:sec?.getAttribute('securityClassification')||'',schema:importedSchema,refs:[...new Set(refs)],icns:[],contentText:'',paras,raw});}state.items=imported;state.system='All';state.kind='All';state.query='';state.selected=null;state.selectedIcn=null;state.library='objects';renderTree();apply();if(imported[0])selectItem(imported[0]);alert(`Imported ${imported.length} XML objects locally.`)}
+hydrateLocalPms();
+state.selected=pickDefaultDM();
 render();
 
 /* v1.5 default landing */
