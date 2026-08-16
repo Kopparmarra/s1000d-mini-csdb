@@ -225,7 +225,7 @@ header .top-tool-btn:hover,
 }
 
 
-/* v2.3 responsive detail tabs */
+/* v2.5 responsive detail tabs */
 .detail-tabs,
 .tabs,
 .tabbar,
@@ -237,7 +237,7 @@ header .top-tool-btn:hover,
 .detail-tabs,
 .tabs {
   display: grid !important;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   width: 100%;
 }
 
@@ -255,9 +255,20 @@ header .top-tool-btn:hover,
   font-size: 11px;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 760px) {
   .detail-tabs,
   .tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* v2.5: keep all nine detail tabs on one row at normal desktop widths */
+@media (min-width: 761px) {
+  .detail-tabs button,
+  .tabs button,
+  [role="tablist"] > button {
+    font-size: 10.5px;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
   }
 }
