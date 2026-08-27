@@ -137,3 +137,8 @@ v2.31 uses one explicit startup sync path so the default Brake system — Manual
 
 ## Detail-pane runtime fix
 v2.31 fixes `noActionMessage()` calling the nonexistent `getW()` function. It now uses `wf()`, preventing the detail pane from crashing when the selected Data Module has no action available for the current role.
+
+
+## v2.32 — Published / IETP preview
+
+v2.32 adds a Published / IETP view to the Authoring Editor. It previews the current working copy as read-only technician-facing content, hides authoring controls, keeps safety/procedure formatting, resolves Data Module references to human-readable titles, and lets the learner follow those related-information links inside the preview.

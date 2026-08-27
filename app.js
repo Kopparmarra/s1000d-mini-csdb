@@ -430,7 +430,7 @@ function syncInitialDetail(){
   renderDetail();
 }
 
-function render(){if(state.library==='objects'&&!state.selected)state.selected=pickDefaultDM();document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v2.31</span><button id="courseBtn" class="top-tool-btn" type="button">Guided Course</button><button id="aboutBtn" class="top-tool-btn subtle" type="button">About</button><button id="createPmBtn" class="top-tool-btn" type="button">Create PM</button><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
+function render(){if(state.library==='objects'&&!state.selected)state.selected=pickDefaultDM();document.querySelector('#app').innerHTML=`<div class="shell"><div class="top"><div class="brand">S1000D Mini-CSDB</div><span class="badge">Bike · Issue 6 R2</span><span class="badge">Educational emulator · v2.32</span><button id="courseBtn" class="top-tool-btn" type="button">Guided Course</button><button id="aboutBtn" class="top-tool-btn subtle" type="button">About</button><button id="createPmBtn" class="top-tool-btn" type="button">Create PM</button><div class="spacer"></div><label class="role">Role <select id="role"><option>Author</option><option>Reviewer</option><option>Approver</option></select></label><button id="loadBtn">Import XML folder</button></div><div class="toolbar"><input id="search" placeholder="Search DMC, title, filename…"><select id="kind"><option>All</option><option>DM</option><option>PM</option><option>DML</option><option>DDN</option><option>UPF</option></select><button id="reset">Reset</button><span class="count" id="count"></span></div><div class="main" id="main"><aside class="pane left"><h3>System / object</h3><div class="tree" id="tree"></div><h3>Workflow</h3><div class="legend"><span class="status st-issued">Issued</span><span class="status st-in-work">In Work</span><span class="status st-in-review">In Review</span><span class="status st-awaiting-approval">Awaiting Approval</span></div><button class="secondary wide" id="clearWf">Reset demo workflow</button><div class="drop"><b>Local import</b><br>Choose an extracted S1000D folder. XML is parsed only in your browser.<input id="folder" type="file" webkitdirectory multiple accept=".xml,.XML" hidden></div><h3>About</h3><div class="notice">Browser-based CSDB simulator for exploring S1000D objects and a simplified authoring workflow. Not a production or compliant CSDB.</div></aside><section class="pane"><div class="table-wrap"><table><thead id="thead"><tr><th>Type</th><th>Key / DMC</th><th>Title</th><th>Issue</th><th>Workflow</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="pane detail" id="detail"></section></div></div>`;
  document.querySelector('#search').oninput=e=>{state.focus=null;state.query=e.target.value;apply()};document.querySelector('#kind').onchange=e=>{state.focus=null;state.kind=e.target.value;apply()};document.querySelector('#role').value=state.role;document.querySelector('#role').onchange=e=>{state.role=e.target.value;renderDetail()};document.querySelector('#reset').onclick=()=>{state.query='';state.kind='All';state.system='All';state.library='objects';state.focus=null;state.tab='content';state.selected=pickDefaultDM();state.selectedIcn=null;state.focus=null;document.querySelector('#search').value='';document.querySelector('#kind').value='All';renderTree();apply();renderDetail()};document.querySelector('#createPmBtn').onclick=()=>openPmBuilder();document.querySelector('#loadBtn').onclick=()=>document.querySelector('#folder').click();document.querySelector('#folder').onchange=importFiles;document.querySelector('#clearWf').onclick=()=>{if(confirm('Reset all simulated workflow states and audit history?')){localStorage.removeItem(WF_KEY);Object.keys(workflow).forEach(k=>delete workflow[k]);apply();renderDetail()}};renderTree();apply();renderDetail();setTimeout(()=>bindInternalRefs(document),0);}
 function renderTree(){const systems=[...new Set(state.items.map(sysOf))].sort();const counts=s=>state.items.filter(x=>sysOf(x)===s).length;const icns=icnLibrary();document.querySelector('#tree').innerHTML=`<button class="${state.library==='objects'&&state.system==='All'?'active':''}" data-s="All">All objects <span class="n">${state.items.length}</span></button>`+systems.map(s=>`<button class="${state.library==='objects'&&state.system===s?'active':''}" data-s="${esc(s)}">${esc(s)} <span class="n">${counts(s)}</span></button>`).join('')+`<div class="tree-sep"></div><button class="${state.library==='icn'?'active':''}" data-s="__ICN__">ICN Library <span class="n">${icns.length}</span></button>`;document.querySelectorAll('#tree button').forEach(b=>b.onclick=()=>{state.focus=null;if(b.dataset.s==='__ICN__'){state.library='icn';state.selected=null;state.selectedIcn=icns[0]||null}else{state.library='objects';state.system=b.dataset.s;state.selectedIcn=null}renderTree();apply();renderDetail()})}
 function renderTable(){
@@ -637,19 +637,55 @@ function cleanAuthoringControlsForSave(canvas){
   return clone;
 }
 
+/* v2.32 Published / IETP preview ----------------------------------------- */
+function ietpReferenceTitle(code){
+  const target=findByCode(code);
+  if(!target)return code;
+  const raw=String(wf(target).draftTitle||target.title||target.code||code);
+  const parts=raw.split(/\s+[—–-]\s+/);
+  return (parts.length>1?parts[parts.length-1]:raw).trim()||code;
+}
+
+function publishedIetpHtml(x,sourceHtml,title){
+  const tmp=document.createElement('div');
+  tmp.innerHTML=sourceHtml||'';
+  tmp.querySelectorAll('.author-structural-control').forEach(n=>n.remove());
+  tmp.querySelectorAll('[contenteditable]').forEach(n=>n.removeAttribute('contenteditable'));
+  tmp.querySelectorAll('.dm-inline-ref[data-dm-code]').forEach(ref=>{
+    const code=ref.dataset.dmCode||ref.textContent.trim();
+    const label=ietpReferenceTitle(code);
+    const a=document.createElement('button');
+    a.type='button';
+    a.className='ietp-ref-link';
+    a.dataset.ietpRef=code;
+    a.textContent=label;
+    a.title=`Open ${label}`;
+    ref.replaceWith(a);
+  });
+  const issue=currentIssue(x);
+  return `<article class="ietp-document">
+    <header class="ietp-doc-head">
+      <div class="ietp-kicker">Published / IETP preview</div>
+      <h1>${esc(title||x.title||x.code)}</h1>
+      <div class="ietp-meta"><span>Issue ${esc(issue)} / ${esc(x.inWork||'—')}</span><span>${esc(x.language||'—')}</span></div>
+    </header>
+    <div class="ietp-body">${tmp.innerHTML}</div>
+  </article>`;
+}
+
 function openAuthoringEditor(x){
  const w=wf(x);if(x.kind!=='DM'||!w.checkedOut)return;
  const existing=document.querySelector('#authoring-overlay');if(existing)existing.remove();
  const authorHtml=w.draftHtml||authoringHtml(x);
  const overlay=document.createElement('div');overlay.id='authoring-overlay';overlay.className='authoring-overlay';
  overlay.innerHTML=`<div class="authoring-window">
-   <div class="authoring-topbar"><div><b>Authoring Editor</b><span>External XML editor simulation · working copy</span></div><div class="authoring-actions"><button data-ed="close">Return to CSDB</button><button class="primary" data-ed="save">Save working copy</button></div></div>
-   <div class="authoring-menubar"><span>File</span><span>Edit</span><span class="active-mode">Author</span><span>Validate</span><span>Review</span><span>Tools</span><span>Help</span></div>
+   <div class="authoring-topbar"><div><b>Authoring Editor</b><span>External XML editor simulation · working copy</span></div><div class="authoring-actions"><button data-ed="close">Return to CSDB</button><button data-ed="published">Published / IETP</button><button class="primary" data-ed="save">Save working copy</button></div></div>
+   <div class="authoring-menubar"><span>File</span><span>Edit</span><span class="active-mode" data-ed-mode-label>Author</span><span>Validate</span><span>Review</span><span>Tools</span><span>Help</span></div>
    <div class="authoring-layout">
     <aside class="authoring-tree"><h3>Document structure</h3><div class="xml-tree"><b>dmodule</b><span>identAndStatusSection</span><span>content</span><span class="indent">${esc(x.schema||'data module content')}</span><span class="indent">structured author view</span></div><div class="editor-note"><b>Simulation</b><br>Author view is styled from the S1000D XML hierarchy, similar in concept to an Author mode in Oxygen or Arbortext. Bold is reserved for headings, parent steps, labels and semantic emphasis — not ordinary body text.</div></aside>
-    <main class="authoring-main"><div class="editor-path">${esc(x.filename||x.code)}</div><label>Data module title<input id="ed-title" value="${esc(w.draftTitle||x.title||'')}"></label><div class="authoring-field-label">Structured content <span>Author view · click text to edit</span></div>
+    <main class="authoring-main"><div class="editor-path">${esc(x.filename||x.code)}</div><div id="ed-author-view"><label>Data module title<input id="ed-title" value="${esc(w.draftTitle||x.title||'')}"></label><div class="authoring-field-label">Structured content <span>Author view · click text to edit</span></div>
     
-    <div id="ed-content" class="authoring-canvas" contenteditable="true" spellcheck="true">${isProceduralDm(x)?`<div class="author-structure-toolbar author-structural-control" contenteditable="false"><button type="button" class="secondary" data-ed="add-step">+ Add step</button><span>Add a new procedural step</span></div>`:''}${authorHtml}</div><label class="change-note">Change note<input id="ed-note" value="${esc(w.draftNote||'')}"></label></main>
+    <div id="ed-content" class="authoring-canvas" contenteditable="true" spellcheck="true">${isProceduralDm(x)?`<div class="author-structure-toolbar author-structural-control" contenteditable="false"><button type="button" class="secondary" data-ed="add-step">+ Add step</button><span>Add a new procedural step</span></div>`:''}${authorHtml}</div><label class="change-note">Change note<input id="ed-note" value="${esc(w.draftNote||'')}"></label></div><div id="ed-ietp-view" class="ietp-preview hidden"></div></main>
     <aside class="authoring-props"><h3>DM properties</h3><dl><dt>DMC</dt><dd>${esc(x.code)}</dd><dt>Issue</dt><dd>${esc(x.issueNumber||'—')} / ${esc(x.inWork||'—')}</dd><dt>Schema</dt><dd>${esc(typeLabel(x))}</dd><dt>Language</dt><dd>${esc(x.language||'—')}</dd><dt>Status</dt><dd>In Work</dd></dl><button class="secondary wide" data-ed="validate">Validate working copy</button><div id="ed-validation" class="validation-box">Not validated in this editing session.</div></aside>
    </div>
  </div>`;
@@ -657,6 +693,31 @@ function openAuthoringEditor(x){
  const initialCanvas=overlay.querySelector('#ed-content');
  if(isProceduralDm(x)) renumberAuthorProcedure(initialCanvas);
  overlay.querySelector('[data-ed="close"]').onclick=()=>overlay.remove();
+ let ietpMode=false;
+ let ietpCurrent=x;
+ const ietpHistory=[];
+ const renderIetpPreview=(target=ietpCurrent,pushHistory=false)=>{
+   if(pushHistory&&ietpCurrent&&target!==ietpCurrent)ietpHistory.push(ietpCurrent);
+   ietpCurrent=target||x;
+   const authorView=overlay.querySelector('#ed-author-view');
+   const preview=overlay.querySelector('#ed-ietp-view');
+   const modeLabel=overlay.querySelector('[data-ed-mode-label]');
+   const toggle=overlay.querySelector('[data-ed="published"]');
+   if(!ietpMode){
+     authorView.classList.remove('hidden');preview.classList.add('hidden');
+     modeLabel.textContent='Author';toggle.textContent='Published / IETP';
+     return;
+   }
+   authorView.classList.add('hidden');preview.classList.remove('hidden');
+   modeLabel.textContent='Published / IETP';toggle.textContent='Back to Author';
+   const isCurrent=ietpCurrent===x;
+   const source=isCurrent?cleanAuthoringControlsForSave(overlay.querySelector('#ed-content')).innerHTML:(wf(ietpCurrent).draftHtml||authoringHtml(ietpCurrent));
+   const title=isCurrent?(overlay.querySelector('#ed-title').value.trim()||x.title):(wf(ietpCurrent).draftTitle||ietpCurrent.title);
+   preview.innerHTML=`<div class="ietp-preview-bar"><div><b>Technician view</b><span>Read-only presentation of structured content</span></div>${ietpHistory.length?'<button type="button" data-ietp-back>← Back</button>':''}</div>${publishedIetpHtml(ietpCurrent,source,title)}`;
+   preview.querySelector('[data-ietp-back]')?.addEventListener('click',()=>{ietpCurrent=ietpHistory.pop()||x;renderIetpPreview(ietpCurrent,false)});
+   preview.querySelectorAll('[data-ietp-ref]').forEach(b=>b.addEventListener('click',()=>{const target=findByCode(b.dataset.ietpRef);if(target)renderIetpPreview(target,true)}));
+ };
+ overlay.querySelector('[data-ed="published"]').onclick=()=>{ietpMode=!ietpMode;ietpCurrent=x;if(!ietpMode)ietpHistory.length=0;renderIetpPreview(ietpCurrent,false)};
  overlay.querySelector('[data-ed="add-step"]')?.addEventListener('click',()=>{
    const canvas=overlay.querySelector('#ed-content');
    addAuthorTopLevelStep(canvas);
