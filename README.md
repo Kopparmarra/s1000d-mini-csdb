@@ -146,3 +146,9 @@ v2.32 adds a Published / IETP view to the Authoring Editor. It previews the curr
 
 ## v2.33
 Published / IETP now replaces the Author view in the centre column instead of appearing below it. Switching views also returns the centre pane to the top.
+
+
+## v2.34
+- Fixed Published / IETP mode so it fully replaces the authoring content in the centre pane.
+- Uses the HTML `hidden` attribute as well as CSS for a robust mode switch.
+- Hides the authoring file path while Published / IETP mode is active.
