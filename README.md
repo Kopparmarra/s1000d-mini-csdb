@@ -142,3 +142,7 @@ v2.31 fixes `noActionMessage()` calling the nonexistent `getW()` function. It no
 ## v2.32 — Published / IETP preview
 
 v2.32 adds a Published / IETP view to the Authoring Editor. It previews the current working copy as read-only technician-facing content, hides authoring controls, keeps safety/procedure formatting, resolves Data Module references to human-readable titles, and lets the learner follow those related-information links inside the preview.
+
+
+## v2.33
+Published / IETP now replaces the Author view in the centre column instead of appearing below it. Switching views also returns the centre pane to the top.
